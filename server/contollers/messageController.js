@@ -1,10 +1,10 @@
-const User=require('../models/User')
-const Message=require('../models/Message')
+const User = require('../models/User');
+const Message = require('../models/Message');
 
 const createMessage = async (req, res) => {
   try {
-    console.log("body ", req.body);
-    const { senderId, receiverId, content } = req.body;
+    const { receiverId, content } = req.body;
+    const senderId = req.userId; // Use the authenticated user's ID
 
     // Fetch the sender and receiver details from the User model
     const sender = await User.findById(senderId);
@@ -15,7 +15,12 @@ const createMessage = async (req, res) => {
       return res.status(404).json({ message: "Sender or receiver not found" });
     }
 
-    const newMessage = Message({
+    // Check if the logged-in user matches the senderId
+    if (senderId !== sender._id.toString()) {
+      return res.status(403).json({ message: 'Forbidden: You are not allowed to send messages on behalf of another user' });
+    }
+
+    const newMessage = new Message({
       senderId,
       receiverId,
       content,
@@ -25,13 +30,13 @@ const createMessage = async (req, res) => {
       receiverEmail: receiver.email
     });
 
-
     await newMessage.save();
 
     res.status(201).json(newMessage);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
-module.exports={createMessage}
+
+module.exports = { createMessage };

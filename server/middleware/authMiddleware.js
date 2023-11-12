@@ -5,14 +5,22 @@ const secretKey = "secretKey123";
 const verifyToken = (req, res, next) => {
   const token = req.header("Authorization");
 
-  if (!token) {
-    res.status(401).json({ message: "no token" });
+  if (!token || !token.startsWith("Bearer ")) {
+    console.log("Invalid token format");
+    return res.status(401).json({ message: "Invalid token format" });
   }
 
-  jwt.compare(token, secretKey, (err, decodedToken) => {
+  const tokenWithoutBearer = token.split(" ")[1];
+
+  jwt.verify(tokenWithoutBearer, secretKey, (err, decodedToken) => {
     if (err) {
-      res.status(401).json({ message: "invalid Token" });
+      console.error("Token verification error:", err.message);
+      return res.status(401).json({ message: "Invalid token" });
     }
+
+    console.log("Token without Bearer:", tokenWithoutBearer);
+    console.log("Decoded Token:", decodedToken);
+
     req.userId = decodedToken.userId;
     next();
   });
